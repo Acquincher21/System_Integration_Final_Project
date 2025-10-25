@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workout Targets</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: #f9fafb;
+      padding: 0;
+    }
+
+    main {
+      flex: 1; /* pushes footer down if content is short */
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #4f46e5;
+    }
+
+    .top_bar {
+      background-color: rgba(130, 147, 251, 1);
+      color: white;
+      padding: 0px 20px;
+      font-size: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-bottom: 2px solid white;
+      margin: 0 70px;
+    }
+
+    .back {
+      background: rgba(130, 147, 251, 1);
+    }
+
+    .top_bar_logo {
+      display: flex;
+      align-items: flex-end;
+      height: 100%;
+      margin-left: -50px;
+    }
+
+    .top_bar_logo img {
+      height: 120px;
+      object-fit: contain;
+    }
+
+    .top_bar_links {
+      display: flex;
+      align-items: center;
+      gap: 25px;
+    }
+
+    .top_bar_links a {
+      color: white;
+      text-decoration: none;
+      -webkit-text-stroke: 0.2px yellow;
+    }
+
+    .top_bar_links a:hover {
+      text-decoration: underline;
+    }
+
+    .logo-button img {
+      height: 45px;
+      vertical-align: middle;
+      cursor: pointer;
+    }
+
+    /* Bell Notification Dropdown */
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      background-color: #f9f9f9;
+      min-width: 160px;
+      box-shadow: 0px 8px 16px rgba(0,0,0,0.2);
+      z-index: 1;
+      right: 0;
+    }
+
+    .dropdown-content a {
+      color: black;
+      padding: 12px 16px;
+      text-decoration: none;
+      display: block;
+      -webkit-text-stroke: 0.2px white;
+    }
+
+    .dropdown-content a:hover {
+      background-color: lightgray;
+      text-decoration: none;
+    }
+
+    .dropdown-content.show {
+      display: block;
+    }
+
+    /* Overlay (Login Drawer) */
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      width: 100vw;
+      display: none;
+      z-index: 1000;
+    }
+
+    .overlay.active {
+      display: block;
+    }
+
+    .overlay-panel {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 280px;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.95);
+      padding: 30px 20px;
+      box-shadow: -4px 0 12px rgba(0, 0, 0, 0.4);
+      box-sizing: border-box;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 30px;
+      color: white;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+
+    .login-container {
+      color: white;
+      margin-top: 60px;
+    }
+
+    .login-button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      font-size: 16px;
+      border-radius: 6px;
+      width: 100%;
+      cursor: pointer;
+      margin-bottom: 12px;
+    }
+
+    .login-button:hover {
+      background-color: #43a047;
+    }
+
+    /* Target cards */
+    .target-container { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+      gap: 1rem; 
+      margin-top: 20px; 
+    }
+
+    .target-card { 
+      background: white; 
+      border-radius: 10px; 
+      padding: 1rem; 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+      text-align: center; 
+      transition: transform 0.2s; 
+    }
+
+    .target-card:hover { 
+      transform: scale(1.05); 
+      background: #eef2ff; 
+    }
+
+    .target-card a { 
+      text-decoration: none; 
+      color: #111827; 
+      display: block; 
+      font-weight: bold; 
+      font-size: 18px; 
+    }
+
+    /* Footer */
+    footer {
+      background-color: #1e1e1e;
+      color: #ffffff;
+      padding: 20px 0;
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+
+    .footer-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      text-align: left;
+    }
+
+    .footer-section {
+      flex: 1 1 30%;
+      margin: 10px;
+      min-width: 200px;
+    }
+
+    .footer-section h3 {
+      margin-bottom: 10px;
+      font-weight: bold;
+      font-size: 1.5em;
+    }
+
+    .footer-section p, 
+    .footer-section a {
+      margin: 5px 0;
+      color: #ffffff;
+      text-decoration: none;
+      font-size: 1em;
+      line-height: 1.4;
+    }
+
+    .footer-section a:hover {
+      color: #00b894;
+      text-decoration: underline;
+    }
+
+    .footer-copy {
+      margin-top: 20px;
+      font-size: 0.9em;
+      color: #bbbbbb;
+      text-align: center;
+    }
+
+    @media (max-width:860px){
+    .modal-body{flex-direction:column}
+    .col.left{max-width:none}
+  }
+
+  footer{background:#0f172a;color:white;padding:12px;text-align:center;font-size:13px}
+  .note{font-size:13px;color:var(--muted);margin-bottom:16px}
+  .category .count{font-size:12px;color:var(--muted);margin-left:8px}
+  </style>
+</head>
+
+<body>
+  <div class="back">
+    <div class="top_bar">
+      <div class="top_bar_logo">
+        <img src="logo.png">
+      </div>
+
+      <div class="top_bar_links">
+        <div class="dropdown">
+          <a href="#" class="logo-button dropbtn" id="bellIcon">
+            <img src="bell.png" alt="Notifications">
+          </a>
+          <div id="notification-dropdown" class="dropdown-content">
+            <a href="#">Notification 1</a>
+            <a href="#">Notification 2</a>
+            <a href="#">Notification 3</a>
+          </div>
+        </div>
+
+        <a href="index.html">Home</a>
+        <a href="about_us.html">About Us</a>
+        <a href="signup.html">Register</a>
+
+        <a href="#" class="logo-button" id="userIcon">
+          <img src="user.png" alt="User">
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ Login Overlay -->
+  <div class="overlay" id="loginOverlay">
+    <div class="overlay-panel">
+      <button id="closeOverlayBtn" class="close-btn">&times;</button>
+      <div class="login-container">
+        <a href="login.html"><button class="login-button">Log In</button></a>
+        <a href="profile.html"><button class="login-button">Profile Management</button></a>
+        <a href="logout.html"><button class="login-button">Log Out</button></a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ Main content -->
+  <main>
+    <h1>Workout Target Muscles</h1>
+    <div id="target-container" class="target-container"></div>
+  </main>
+
+  <!-- ✅ Footer -->
+ <footer>
+  <div class="footer-container">
+    <div class="footer-section">
+      <h3>Train Smart. Live Bold.</h3>
+      <p>Achieve your fitness goals with </p>
+      <p>personalized routines.</p>
+    </div>
+
+    <div class="footer-section">
+      <p>📍 123 Lasalle, PS City, PS 23232</p>
+      <p>📞 (123) 456-7890</p>
+      <p>✉️ support@fitness.com</p>
+    </div>
+
+    <div class="footer-section">
+      <a href="schedule.php"> Your Fitness Partner </a> <br>
+      <a href="about_us.php"> About Us </a> <br>
+      <a href="care.php"> Talk to us </a>
+    </div>
+  </div>
+
+  <p class="footer-copy">&copy; 2025 Fitness and Nutrition. All rights reserved.</p>
+</footer>
+
+  <script>
+    const apiKey = "2b8d83a6b6mshae874028ed81c2cp1b1f59jsnbc3c0f95b0b2";
+
+    async function loadTargets() {
+      const container = document.getElementById("target-container");
+      container.innerHTML = "<p>Loading...</p>";
+
+      try {
+        const res = await fetch("https://exercisedb.p.rapidapi.com/exercises/targetList", {
+          method: "GET",
+          headers: {
+            "x-rapidapi-host": "exercisedb.p.rapidapi.com",
+            "x-rapidapi-key": apiKey
+          }
+        });
+
+        if (!res.ok) throw new Error("Failed to fetch data");
+
+        const data = await res.json();
+        container.innerHTML = "";
+
+        data.forEach(target => {
+          const card = document.createElement("div");
+          card.className = "target-card";
+          card.innerHTML = `<a href="target_exercises.html?target=${encodeURIComponent(target)}">${target}</a>`;
+          container.appendChild(card);
+        });
+      } catch (err) {
+        container.innerHTML = `<p style="color:red;">Error: ${err.message}</p>`;
+      }
+    }
+
+    loadTargets();
+
+    const userIcon = document.getElementById("userIcon");
+    const loginOverlay = document.getElementById("loginOverlay");
+    const closeOverlayBtn = document.getElementById("closeOverlayBtn");
+
+    userIcon.addEventListener("click", (e) => {
+      e.preventDefault();
+      loginOverlay.classList.add("active");
+    });
+
+    closeOverlayBtn.addEventListener("click", () => {
+      loginOverlay.classList.remove("active");
+    });
+
+    loginOverlay.addEventListener("click", (e) => {
+      if (e.target === loginOverlay) {
+        loginOverlay.classList.remove("active");
+      }
+    });
+
+    const bellIcon = document.getElementById("bellIcon");
+    const dropdown = document.getElementById("notification-dropdown");
+
+    bellIcon.addEventListener("click", (e) => {
+      e.preventDefault();
+      dropdown.classList.toggle("show");
+    });
+
+    window.addEventListener("click", (e) => {
+      if (!e.target.closest(".dropdown")) {
+        dropdown.classList.remove("show");
+      }
+    });
+  </script>
+</body>
+</html>
