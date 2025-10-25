@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Food Browser — Nutrition & Recipes (API Ninjas)</title>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<style>
+  :root{
+    --primary:#2563eb;
+    --bg:#f8fafc;
+    --card:#fff;
+    --muted:#6b7280;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    background:var(--bg);
+    color:#111827;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
+
+  header{
+    background:var(--primary);
+    color:white;
+    padding:22px 18px;
+    text-align:center;
+    font-size:20px;
+    font-weight:600;
+  }
+
+  main{flex:1;padding:28px;max-width:1200px;margin:0 auto;width:100%}
+
+  .category{
+    margin-bottom:28px;
+  }
+  .category h2{
+    margin:0 0 12px 0;
+    color:var(--primary);
+    font-size:18px;
+  }
+
+  .food-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit,minmax(150px,1fr));
+    gap:14px;
+  }
+
+  .food-card{
+    background:var(--card);
+    border-radius:12px;
+    padding:14px;
+    text-align:center;
+    box-shadow:0 6px 18px rgba(15,23,42,0.06);
+    cursor:pointer;
+    transition:transform .14s ease, box-shadow .14s ease;
+    user-select:none;
+  }
+  .food-card:hover{ transform:translateY(-6px); box-shadow:0 12px 28px rgba(15,23,42,0.08) }
+  .food-card img{ width:56px;height:56px; object-fit:contain }
+  .food-card h3{ margin:10px 0 0 0; font-size:15px; color:var(--primary) }
+  .food-card p{ margin:6px 0 0; font-size:13px; color:var(--muted) }
+
+  /* modal */
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(2,6,23,0.55);display:none;align-items:center;justify-content:center;z-index:1500;padding:20px;
+  }
+  .modal{
+    width:100%;max-width:920px;background: #fff;border-radius:12px;overflow:hidden;box-shadow:0 30px 80px rgba(2,6,23,0.6);
+    display:flex;flex-direction:column;max-height:90vh;
+  }
+  .modal-head{
+    display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #eef2ff;
+  }
+  .modal-head h3{margin:0;color:var(--primary)}
+  .close-btn{background:none;border:0;font-size:24px;cursor:pointer;color:var(--muted)}
+  .modal-body{display:flex;gap:16px;padding:18px;overflow:auto}
+  .col{flex:1;min-width:0}
+  .col.left{max-width:420px}
+  .loader{display:flex;align-items:center;gap:12px;color:var(--muted)}
+  .nutri-table{width:100%;border-collapse:collapse;margin-bottom:10px}
+  .nutri-table th, .nutri-table td{border:1px solid #eef2ff;padding:8px;font-size:13px;text-align:center}
+  .nutri-table th{background:var(--primary);color:white;font-weight:600}
+  .recipe-item{background:#f8fafc;border-radius:8px;padding:12px;margin-bottom:10px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.6)}
+  .recipe-item h4{margin:0 0 6px 0;color:#0f172a}
+  .muted{color:var(--muted);font-size:13px}
+
+  .top_bar {
+    background-color: rgba(130, 147, 251, 1);
+    color: white;
+    padding: 0px 20px;
+    font-size: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 2px solid white;
+    margin: 0 70px;
+  }
+
+  .back {
+    background: rgba(130, 147, 251, 1);
+  }
+
+  .top_bar_logo {
+    display: flex;
+    align-items: flex-end;
+    height: 100%;
+    margin-left: -50px;
+  }
+
+  .top_bar_logo img {
+    height: 120px;
+    object-fit: contain;
+  }
+
+  .top_bar_links {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+  }
+
+  .top_bar_links a {
+    color: white;
+    text-decoration: none;
+    -webkit-text-stroke: 0.2px yellow;
+  }
+
+  .top_bar_links a:hover {
+    text-decoration: underline;
+  }
+
+  .logo-button img {
+    height: 45px;
+    vertical-align: middle;
+    cursor: pointer;
+  }
+
+  /* ---- Dropdown ---- */
+  .dropdown {
+    position: relative;
+    display: inline-block;
+  }
+
+  .dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px rgba(0,0,0,0.2);
+    z-index: 1;
+    right: 0;
+  }
+
+  .dropdown-content a {
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    -webkit-text-stroke: 0.2px white;
+  }
+
+  .dropdown-content a:hover {
+    background-color: lightgray;
+  }
+
+  .dropdown-content.show {
+    display: block;
+  }
+
+  /* ---- Overlay ---- */
+  .overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 100vw;
+    display: none;
+    z-index: 1000;
+  }
+
+  .overlay.active {
+    display: block;
+  }
+
+  .overlay-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 280px;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.95);
+    padding: 30px 20px;
+    box-shadow: -4px 0 12px rgba(0, 0, 0, 0.4);
+    box-sizing: border-box;
+  }
+
+  .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 30px;
+    color: white;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+
+  .login-container {
+    color: white;
+    margin-top: 60px;
+  }
+
+  .login-button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    font-size: 16px;
+    border-radius: 6px;
+    width: 100%;
+    cursor: pointer;
+    margin-bottom: 12px;
+  }
+
+  .login-button:hover {
+    background-color: #43a047;
+  }
+
+  /* ---- Content ---- */
+  .container {
+    max-width: 800px;
+    margin: 20px auto;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  p { margin: 10px 0; }
+
+  .back-btn {
+    display: block;
+    text-align: center;
+    margin: 20px auto;
+    background: #4f46e5;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    width: fit-content;
+  }
+
+  .back-btn:hover {
+    background: #4338ca;
+  }
+
+  /* ---- Footer ---- */
+  footer {
+    background-color: #1e1e1e;
+    color: #ffffff;
+    padding: 20px 0;
+    text-align: center;
+  }
+
+  .footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    text-align: left;
+  }
+
+  .footer-section {
+    flex: 1 1 30%;
+    margin: 10px;
+    min-width: 200px;
+  }
+
+  .footer-section h3 {
+    margin-bottom: 10px;
+    font-weight: bold;
+    font-size: 1.5em;
+  }
+
+  .footer-section p, 
+  .footer-section a {
+    margin: 5px 0;
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 1em;
+    line-height: 1.4;
+  }
+
+  .footer-section a:hover {
+    color: #00b894;
+    text-decoration: underline;
+  }
+
+  .footer-copy {
+    margin-top: 20px;
+    font-size: 0.9em;
+    color: #bbbbbb;
+    text-align: center;
+  }
+
+  /* small screens */
+  @media (max-width:860px){
+    .modal-body{flex-direction:column}
+    .col.left{max-width:none}
+  }
+
+  footer{background:#0f172a;color:white;padding:12px;text-align:center;font-size:13px}
+  .note{font-size:13px;color:var(--muted);margin-bottom:16px}
+  .category .count{font-size:12px;color:var(--muted);margin-left:8px}
+</style>
+</head>
+<body>
+  <div class="back">
+    <div class="top_bar">
+      <div class="top_bar_logo">
+        <img src="logo.png">
+      </div>
+
+      <div class="top_bar_links">
+        <div class="dropdown">
+          <a href="#" class="logo-button dropbtn" id="bellIcon">
+            <img src="bell.png" alt="Notifications">
+          </a>
+          <div id="notification-dropdown" class="dropdown-content">
+            <a href="#">Notification 1</a>
+            <a href="#">Notification 2</a>
+            <a href="#">Notification 3</a>
+          </div>
+        </div>
+
+       <a href="index.html">Home</a>
+        <a href="about_us.html">About Us</a>
+        <a href="signup.html">Register</a>
+
+        <a href="#" class="logo-button" id="userIcon">
+          <img src="user.png" alt="User">
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay -->
+  <div class="overlay" id="loginOverlay">
+    <div class="overlay-panel">
+      <button id="closeOverlayBtn" class="close-btn">&times;</button>
+      <div class="login-container">
+        <a href="login.php"><button class="login-button">Log In</button></a>
+        <a href="profile.php"><button class="login-button">Profile Management</button></a>
+        <a href="logout.php"><button class="login-button">Log Out</button></a>
+      </div>
+    </div>
+  </div>
+
+  <header>🍽️ Food and Nutrition Browser — Click a card to view Nutrition & Recipes </header>
+
+  <main>
+
+    <!-- Categories (predefined list built from common foods) -->
+    <section class="category" id="cat-meats">
+      <h2>Meats <span class="count">(common cuts & types)</span></h2>
+      <div class="food-grid">
+        <!-- data-food used as query string to send to API -->
+        <div class="food-card" data-food="chicken breast"><img src="https://cdn-icons-png.flaticon.com/128/1998/1998592.png" alt=""><h3>Chicken Breast</h3><p>Lean white meat</p></div>
+        <div class="food-card" data-food="chicken thigh"><img src="https://cdn-icons-png.flaticon.com/128/1998/1998592.png" alt=""><h3>Chicken Thigh</h3><p>Dark meat</p></div>
+        <div class="food-card" data-food="ground beef"><img src="https://cdn-icons-png.flaticon.com/128/1995/1995597.png" alt=""><h3>Ground Beef</h3><p>Minced</p></div>
+        <div class="food-card" data-food="steak"><img src="https://cdn-icons-png.flaticon.com/128/184/184534.png" alt=""><h3>Steak</h3><p>Beef steak</p></div>
+        <div class="food-card" data-food="pork chop"><img src="https://cdn-icons-png.flaticon.com/128/135/135676.png" alt=""><h3>Pork Chop</h3><p>Cut of pork</p></div>
+        <div class="food-card" data-food="bacon"><img src="https://cdn-icons-png.flaticon.com/128/1046/1046784.png" alt=""><h3>Bacon</h3><p>Cured pork</p></div>
+        <div class="food-card" data-food="lamb"><img src="https://cdn-icons-png.flaticon.com/128/4945/4945149.png" alt=""><h3>Lamb</h3><p>Red meat</p></div>
+        <div class="food-card" data-food="turkey breast"><img src="https://cdn-icons-png.flaticon.com/128/1998/1998592.png" alt=""><h3>Turkey Breast</h3><p>Lean poultry</p></div>
+      </div>
+    </section>
+
+    <section class="category" id="cat-fish">
+      <h2>Seafood</h2>
+      <div class="food-grid">
+        <div class="food-card" data-food="salmon"><img src="https://cdn-icons-png.flaticon.com/128/726/726431.png" alt=""><h3>Salmon</h3><p>Fatty fish</p></div>
+        <div class="food-card" data-food="tuna"><img src="https://cdn-icons-png.flaticon.com/128/2907/2907764.png" alt=""><h3>Tuna</h3><p>Fish</p></div>
+        <div class="food-card" data-food="shrimp"><img src="https://cdn-icons-png.flaticon.com/128/187/187204.png" alt=""><h3>Shrimp</h3><p>Shellfish</p></div>
+        <div class="food-card" data-food="cod"><img src="https://cdn-icons-png.flaticon.com/128/1995/1995609.png" alt=""><h3>Cod</h3><p>White fish</p></div>
+      </div>
+    </section>
+
+    <section class="category" id="cat-grains">
+      <h2>Grains & Pasta</h2>
+      <div class="food-grid">
+        <div class="food-card" data-food="white rice"><img src="https://cdn-icons-png.flaticon.com/128/135/135620.png" alt=""><h3>White Rice</h3><p>Starch</p></div>
+        <div class="food-card" data-food="brown rice"><img src="https://cdn-icons-png.flaticon.com/128/135/135620.png" alt=""><h3>Brown Rice</h3><p>Whole grain</p></div>
+        <div class="food-card" data-food="pasta"><img src="https://cdn-icons-png.flaticon.com/128/590/590836.png" alt=""><h3>Pasta</h3><p>Wheat</p></div>
+        <div class="food-card" data-food="quinoa"><img src="https://cdn-icons-png.flaticon.com/128/2907/2907764.png" alt=""><h3>Quinoa</h3><p>Pseudo-grain</p></div>
+        <div class="food-card" data-food="oatmeal"><img src="https://cdn-icons-png.flaticon.com/128/135/135620.png" alt=""><h3>Oatmeal</h3><p>Breakfast grain</p></div>
+      </div>
+    </section>
+
+    <section class="category" id="cat-veg">
+      <h2>Vegetables</h2>
+      <div class="food-grid">
+        <div class="food-card" data-food="broccoli"><img src="https://cdn-icons-png.flaticon.com/128/1998/1998592.png" alt=""><h3>Broccoli</h3><p>Cruciferous</p></div>
+        <div class="food-card" data-food="spinach"><img src="https://cdn-icons-png.flaticon.com/128/2907/2907764.png" alt=""><h3>Spinach</h3><p>Leafy green</p></div>
+        <div class="food-card" data-food="carrots"><img src="https://cdn-icons-png.flaticon.com/128/1995/1995597.png" alt=""><h3>Carrots</h3><p>Root</p></div>
+        <div class="food-card" data-food="potato"><img src="https://cdn-icons-png.flaticon.com/128/135/135620.png" alt=""><h3>Potato</h3><p>Tuber</p></div>
+        <div class="food-card" data-food="bell pepper"><img src="https://cdn-icons-png.flaticon.com/128/1046/1046784.png" alt=""><h3>Bell Pepper</h3><p>Capsicum</p></div>
+        <div class="food-card" data-food="onion"><img src="https://cdn-icons-png.flaticon.com/128/1046/1046784.png" alt=""><h3>Onion</h3><p>Allium</p></div>
+      </div>
+    </section>
+
+    <section class="category" id="cat-fruit">
+      <h2>Fruits</h2>
+      <div class="food-grid">
+        <div class="food-card" data-food="apple"><img src="https://cdn-icons-png.flaticon.com/128/415/415733.png" alt=""><h3>Apple</h3><p>Fruit</p></div>
+        <div class="food-card" data-food="banana"><img src="https://cdn-icons-png.flaticon.com/128/415/415731.png" alt=""><h3>Banana</h3><p>Fruit</p></div>
+        <div class="food-card" data-food="orange"><img src="https://cdn-icons-png.flaticon.com/128/415/415749.png" alt=""><h3>Orange</h3><p>Citrus</p></div>
+        <div class="food-card" data-food="strawberries"><img src="https://cdn-icons-png.flaticon.com/128/415/415739.png" alt=""><h3>Strawberries</h3><p>Berry</p></div>
+        <div class="food-card" data-food="grapes"><img src="https://cdn-icons-png.flaticon.com/128/415/415740.png" alt=""><h3>Grapes</h3><p>Fruit</p></div>
+      </div>
+    </section>
+
+    <section class="category" id="cat-dairy">
+      <h2>Dairy & Eggs</h2>
+      <div class="food-grid">
+        <div class="food-card" data-food="milk (whole)"><img src="https://cdn-icons-png.flaticon.com/128/2921/2921822.png" alt=""><h3>Whole Milk</h3><p>Dairy</p></div>
+        <div class="food-card" data-food="yogurt"><img src="https://cdn-icons-png.flaticon.com/128/2921/2921822.png" alt=""><h3>Yogurt</h3><p>Dairy</p></div>
+        <div class="food-card" data-food="cheddar cheese"><img src="https://cdn-icons-png.flaticon.com/128/2921/2921822.png" alt=""><h3>Cheddar Cheese</h3><p>Cheese</p></div>
+        <div class="food-card" data-food="egg (large)"><img src="https://cdn-icons-png.flaticon.com/128/1998/1998592.png" alt=""><h3>Egg (Large)</h3><p>Egg</p></div>
+      </div>
+    </section>
+
+    <section class="category" id="cat-snacks">
+      <h2>Snacks & Fast Food</h2>
+      <div class="food-grid">
+        <div class="food-card" data-food="hamburger"><img src="https://cdn-icons-png.flaticon.com/128/3075/3075977.png" alt=""><h3>Hamburger</h3><p>Fast food</p></div>
+        <div class="food-card" data-food="hot dog"><img src="https://cdn-icons-png.flaticon.com/128/3075/3075977.png" alt=""><h3>Hot Dog</h3><p>Fast food</p></div>
+        <div class="food-card" data-food="french fries"><img src="https://cdn-icons-png.flaticon.com/128/1046/1046784.png" alt=""><h3>French Fries</h3><p>Side</p></div>
+        <div class="food-card" data-food="pizza"><img src="https://cdn-icons-png.flaticon.com/128/3075/3075977.png" alt=""><h3>Pizza</h3><p>Fast food</p></div>
+        <div class="food-card" data-food="chips"><img src="https://cdn-icons-png.flaticon.com/128/1046/1046784.png" alt=""><h3>Potato Chips</h3><p>Snack</p></div>
+      </div>
+    </section>
+
+    <section class="category" id="cat-drinks">
+      <h2>Drinks</h2>
+      <div class="food-grid">
+        <div class="food-card" data-food="orange juice"><img src="https://cdn-icons-png.flaticon.com/128/2921/2921822.png" alt=""><h3>Orange Juice</h3><p>Beverage</p></div>
+        <div class="food-card" data-food="coffee (black)"><img src="https://cdn-icons-png.flaticon.com/128/2913/2913467.png" alt=""><h3>Black Coffee</h3><p>Drink</p></div>
+        <div class="food-card" data-food="cola"><img src="https://cdn-icons-png.flaticon.com/128/2913/2913467.png" alt=""><h3>Cola</h3><p>Soda</p></div>
+        <div class="food-card" data-food="beer"><img src="https://cdn-icons-png.flaticon.com/128/2921/2921822.png" alt=""><h3>Beer</h3><p>Alcoholic</p></div>
+      </div>
+    </section>
+
+    <section class="category" id="cat-dessert">
+      <h2>Desserts & Sweets</h2>
+      <div class="food-grid">
+        <div class="food-card" data-food="chocolate cake"><img src="https://cdn-icons-png.flaticon.com/128/595/595043.png" alt=""><h3>Chocolate Cake</h3><p>Sweet</p></div>
+        <div class="food-card" data-food="ice cream"><img src="https://cdn-icons-png.flaticon.com/128/595/595043.png" alt=""><h3>Ice Cream</h3><p>Dessert</p></div>
+        <div class="food-card" data-food="pancakes"><img src="https://cdn-icons-png.flaticon.com/128/595/595043.png" alt=""><h3>Pancakes</h3><p>Breakfast/dessert</p></div>
+        <div class="food-card" data-food="donut"><img src="https://cdn-icons-png.flaticon.com/128/595/595043.png" alt=""><h3>Donut</h3><p>Sweet</p></div>
+      </div>
+    </section>
+
+  </main>
+
+  <div class="modal-backdrop" id="backdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-head">
+        <h3 id="modalTitle">Food Details</h3>
+        <button class="close-btn" id="closeModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="col left">
+          <div id="nutriArea">
+            <div id="nutriHeader" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <strong id="foodTitle">—</strong>
+              <div class="loader" id="nutriLoader" style="display:none">Loading nutrition…</div>
+            </div>
+            <table class="nutri-table" id="nutriTable" style="display:none">
+              <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+              <tbody id="nutriBody"></tbody>
+            </table>
+            <p id="nutriNote" class="muted" style="margin-top:8px"></p>
+          </div>
+        </div>
+
+        <div class="col right">
+          <div id="recipeArea">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <strong>Recipes</strong>
+              <div class="loader" id="recipeLoader" style="display:none">Loading recipes…</div>
+            </div>
+            <div id="recipesList">
+              <!-- recipe items injected here -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+  <div class="footer-container">
+    <div class="footer-section">
+      <h3>Train Smart. Live Bold.</h3>
+      <p>Achieve your fitness goals with </p>
+      <p>personalized routines.</p>
+    </div>
+
+    <div class="footer-section">
+      <p>📍 123 Lasalle, PS City, PS 23232</p>
+      <p>📞 (123) 456-7890</p>
+      <p>✉️ support@fitness.com</p>
+    </div>
+
+    <div class="footer-section">
+      <a href="schedule.php"> Your Fitness Partner </a> <br>
+      <a href="about_us.php"> About Us </a> <br>
+      <a href="care.php"> Talk to us </a>
+    </div>
+  </div>
+
+  <p class="footer-copy">&copy; 2025 Fitness and Nutrition. All rights reserved.</p>
+</footer>
+
+<script>
+$(function(){
+  const API_KEY = 'MhwT/ficzuzqOQGyP2u+Fw==oQEXQz0CQnO3OgLW';
+
+  /* ============================
+     🖼️ Custom image mapping area
+     ============================ */
+  const foodImages = {
+    //Meats
+    "chicken breast": "Chicken.jpg",
+    "chicken thigh": "thigh.jpg",
+    "ground beef": "beef.jpg",
+    "steak": "steak.jpg",
+    "pork chop": "pork.jpg",
+    "bacon": "bacon.jpg",
+    "lamb": "lamb.jpg",
+    "turkey breast": "turkey.jpg",
+
+    //Seafood
+    "salmon": "salmon.jpg",
+    "tuna": "tuna.jpg",
+    "shrimp": "shrimp.jpg",
+    "cod": "cod.jpg",
+
+    //Grains and Pasta
+    "white rice": "white.jpg",
+    "brown rice": "brown.jpg",
+    "pasta": "pasta.jpg",
+    "quinoa": "quinoa.jpg",
+    "oatmeal": "oatmeal.jpg",
+    
+
+    //vegetables
+    "brocolli": "brocolli.jpg",
+    "spinach": "spinach.jpg",
+    "carrots": "carrots.jpg",
+    "potato": "potato.jpg",
+    "bell pepper": "bellpepper.jpg",
+    "onion": "onion.jpg",
+
+
+    //Fruits
+    "apple": "https://upload.wikimedia.org/wikipedia/commons/1/15/Red_Apple.jpg",
+    "banana": "https://upload.wikimedia.org/wikipedia/commons/8/8a/Banana-Single.jpg",
+    "orange": "https://upload.wikimedia.org/wikipedia/commons/c/c4/Orange-Fruit-Pieces.jpg",
+    "strawberries": "https://upload.wikimedia.org/wikipedia/commons/2/29/PerfectStrawberry.jpg",
+    "grapes": "grapes.jpg",
+
+    //Dairy and Eggs
+    "whole milk": "wholemilk.jpg",
+    "yogurt": "yogurt.jpg",
+    "cheddar cheese": "cheddar.jpg",
+    "egg (large)": "egg.jpg",
+
+
+    //Snacks and Fast food
+    "pizza": "pizza.jpg",
+    "hamburger": "burger.jpg",
+    "french fries": "fries.jpg",
+
+    //Drinks
+    "orange juice": "orangejuice.jpg",
+    "black coffee": "coffee.jpg",
+    "cola": "cola.jpg",
+    "beer": "beer.png",
+
+    //Desserts and Sweets
+    "chocolate cake": "chocolatecake.png",
+    "ice cream": "icecream.jpg",
+    "pancakes": "pancake.png",
+    "donut": "donut.png"
+
+
+    // 👉 You can keep adding more like:
+    // "broccoli": "https://yourimageurl.com/broccoli.jpg"
+  };
+
+  // Automatically set images for each card
+  $('.food-card').each(function(){
+    const food = $(this).data('food')?.toLowerCase();
+    if(foodImages[food]) {
+      $(this).find('img').attr('src', foodImages[food]);
+    }
+  });
+
+  // ----- Existing code below -----
+  const $backdrop = $('#backdrop');
+  const $close = $('#closeModal');
+  const $foodTitle = $('#foodTitle');
+  const $nutriLoader = $('#nutriLoader');
+  const $recipeLoader = $('#recipeLoader');
+  const $nutriTable = $('#nutriTable');
+  const $nutriBody = $('#nutriBody');
+  const $nutriNote = $('#nutriNote');
+  const $recipesList = $('#recipesList');
+
+  function openModal() { $backdrop.css('display','flex'); }
+  function closeModal() { $backdrop.hide(); clearModal(); }
+
+  function clearModal(){
+    $foodTitle.text('—');
+    $nutriBody.empty();
+    $nutriTable.hide();
+    $nutriNote.text('');
+    $recipesList.empty();
+    $nutriLoader.hide();
+    $recipeLoader.hide();
+  }
+
+  function showNutrition(nutriArr, query){
+    if(!nutriArr || nutriArr.length === 0){
+      $nutriNote.text('No nutrition data found for "'+query+'".');
+      return;
+    }
+    const item = nutriArr[0];
+    $nutriBody.empty();
+    const metrics = [
+      ['Name', item.name || query],
+      ['Calories (kcal)', item.calories ?? '—'],
+      ['Serving Size (g)', item.serving_size_g ?? '—'],
+      ['Protein (g)', item.protein_g ?? '—'],
+      ['Total Fat (g)', item.fat_total_g ?? '—'],
+      ['Saturated Fat (g)', item.fat_saturated_g ?? '—'],
+      ['Carbohydrates (g)', item.carbohydrates_total_g ?? '—'],
+      ['Sugar (g)', item.sugar_g ?? '—'],
+      ['Fiber (g)', item.fiber_g ?? '—'],
+      ['Cholesterol (mg)', item.cholesterol_mg ?? '—'],
+      ['Sodium (mg)', item.sodium_mg ?? '—'],
+      ['Potassium (mg)', item.potassium_mg ?? '—']
+    ];
+    metrics.forEach(row => {
+      $nutriBody.append('<tr><td>'+row[0]+'</td><td>'+row[1]+'</td></tr>');
+    });
+    $nutriTable.show();
+    $nutriNote.text('Values returned by API Ninjas nutrition endpoint (may represent one serving or the queried portion).');
+  }
+
+  function showRecipes(recipes, query){
+    $recipesList.empty();
+    if(!recipes || recipes.length === 0){
+      $recipesList.append('<div class="muted">No recipes found for "'+query+'".</div>');
+      return;
+    }
+    recipes.forEach(r => {
+      const $r = $('<div class="recipe-item"></div>');
+      $r.append('<h4>' + (r.title || 'Recipe') + '</h4>');
+      if(r.servings) $r.append('<div class="muted">Servings: ' + r.servings + '</div>');
+      if(r.ingredients && r.ingredients.length){
+        $r.append('<div style="margin-top:8px"><strong>Ingredients</strong><ul style="margin:6px 0 0 18px;padding:0">'+ r.ingredients.map(i => '<li>'+i+'</li>').join('') +'</ul></div>');
+      }
+      if(r.instructions){
+        $r.append('<div style="margin-top:8px"><strong>Instructions</strong><p style="margin:6px 0 0">'+ r.instructions.slice(0,400) + (r.instructions.length>400? '...' : '') +'</p></div>');
+      }
+      $recipesList.append($r);
+    });
+  }
+
+  function fetchBoth(query){
+    if(!API_KEY){
+      alert('Please replace API_KEY with your API Ninjas key in the script.');
+      return;
+    }
+
+    openModal();
+    $foodTitle.text(query);
+    $nutriLoader.show(); $recipeLoader.show();
+    $nutriBody.empty(); $recipesList.empty(); $nutriNote.text(''); $nutriTable.hide();
+
+    const nutritionURL = 'https://api.api-ninjas.com/v1/nutrition?query=' + encodeURIComponent(query);
+    const recipeURL = 'https://api.api-ninjas.com/v2/recipe?title=' + encodeURIComponent(query);
+
+    const pNutri = $.ajax({
+      url: nutritionURL, method: 'GET',
+      headers: {'X-Api-Key': API_KEY}, dataType: 'json'
+    });
+
+    const pRecipe = $.ajax({
+      url: recipeURL, method: 'GET',
+      headers: {'X-Api-Key': API_KEY}, dataType: 'json'
+    });
+
+    $.when(pNutri, pRecipe)
+      .done(function(nutriResp, recipeResp){
+        const nutriData = nutriResp[0];
+        const recipeData = recipeResp[0];
+        $nutriLoader.hide(); $recipeLoader.hide();
+
+        showNutrition(nutriData, query);
+        showRecipes(recipeData, query);
+      })
+      .fail(function(jqXHR1, jqXHR2){
+        $nutriLoader.hide(); $recipeLoader.hide();
+        $recipesList.html('<div class="muted">Error fetching data. Check console for details.</div>');
+        console.error('API errors', jqXHR1, jqXHR2);
+      });
+  }
+
+  $('.food-card').on('click', function(){
+    const q = $(this).attr('data-food');
+    if(!q) return;
+    fetchBoth(q);
+  });
+
+  $close.on('click', closeModal);
+  $backdrop.on('click', function(e){
+    if(e.target === this) closeModal();
+  });
+  $(document).on('keydown', function(e){ if(e.key === 'Escape') closeModal(); });
+
+});
+
+// Overlay
+const userIcon = document.getElementById("userIcon");
+const loginOverlay = document.getElementById("loginOverlay");
+const closeOverlayBtn = document.getElementById("closeOverlayBtn");
+
+userIcon.addEventListener("click", (e) => {
+  e.preventDefault();
+  loginOverlay.classList.add("active");
+});
+
+closeOverlayBtn.addEventListener("click", () => {
+  loginOverlay.classList.remove("active");
+});
+
+loginOverlay.addEventListener("click", (e) => {
+  if (e.target === loginOverlay) {
+    loginOverlay.classList.remove("active");
+  }
+});
+
+// Bell dropdown
+const bellIcon = document.getElementById("bellIcon");
+const dropdown = document.getElementById("notification-dropdown");
+
+bellIcon.addEventListener("click", (e) => {
+  e.preventDefault();
+  dropdown.classList.toggle("show");
+});
+
+window.addEventListener("click", (e) => {
+  if (!e.target.closest(".dropdown")) {
+    dropdown.classList.remove("show");
+  }
+});
+</script>
+</body>
+</html>
